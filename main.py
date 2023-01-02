@@ -35,6 +35,9 @@ if __name__ == "__main__":
 
     load_dotenv()
 
+    file_path = os.path.realpath(__file__)
+    folder_path = file_path.replace("main.py", '')
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('terminal_command_request')
@@ -46,11 +49,23 @@ if __name__ == "__main__":
         action='store_true'
     )
     parser.add_argument(
+        "-x",
+        "--hide_code",
+        help="Hides the code/command that is shown to execute when executing code.",
+        action='store_true'
+    )
+    parser.add_argument(
         "-s",
         "--set_key",
         help="Reset API key",
         type=str,
         required=False,
+    )
+    parser.add_argument(
+        "-c",
+        "--no_colour",
+        help="No colour output",
+        action='store_true'
     )
 
     args = parser.parse_args()
@@ -58,12 +73,15 @@ if __name__ == "__main__":
     api_key = os.getenv("OPENAI_API_KEY")
 
     if not api_key or args.set_key:
+        print(styled("Go to https://openai.com/api/ to generate your own API key.", Styles.blue))
+        print(styled('...also save this alias to your .zshrc or .bashrc file with:\n', Styles.blue))
+        print(styled('alias gpt="python3 ~'+file_path, Styles.green))
+
         if args.set_key is not None:
             api_key = args.set_key
         else:
             api_key = input("Input your API key to be saved to '.env':")
-
-        with open('.env', 'w') as f:
+        with open(folder_path+'.env', 'w') as f:
             f.write(f'OPENAI_API_KEY = "{api_key}"')
 
     openai.api_key = api_key
@@ -72,7 +90,7 @@ if __name__ == "__main__":
     terminal_command_request = args.terminal_command_request
 
     try:
-        with open('request_history.json', mode="r") as f:
+        with open(folder_path+'request_history.json', mode="r") as f:
             history = json.loads(f.read())
     except FileNotFoundError:
         history: dict = {}
@@ -99,15 +117,24 @@ if __name__ == "__main__":
         if len(history.keys()) > max_history:
             history = {i: history[i] for i in history if list(history.keys()).index(i) < max_history}
 
-        with open('request_history.json', mode="w") as f:
+        with open(folder_path+'request_history.json', mode="w") as f:
             f.write(json.dumps(history))
 
     if args.execute:
-        print(styled("> ", Styles.bg_red) + styled(answer, Styles.blue + Styles.inverted))
+        if not args.hide_code:
+            print("⎽⎽⎽")
+            if not args.no_colour:
+                print(styled(" ▶ \n", Styles.green) + styled(answer, Styles.blue))
+            else:
+                print(" ▶ \n" + answer)
+            print("‾‾‾")
 
         # shell_output = os.system(answer)
         shell_output = subprocess.run(answer, stdout=subprocess.PIPE, shell=True)
 
         print(shell_output.stdout.decode("utf-8"))
     else:
-        print(styled(answer, Styles.blue))
+        if not args.no_colour:
+            print(styled(answer, Styles.blue))
+        else:
+            print(answer)
