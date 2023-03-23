@@ -22,7 +22,7 @@ python3 -m pip install -r requirements.txt
 python3 main.py "check what shell im using"
 ```
 
-It will then prompt you to set up your API key with [OpenAI](https://openai.com/api/). Currently it is free to use during the beta period.
+It will then prompt you to set up your API key with [OpenAI](https://openai.com/api/).
 
 Also, it will give you an alias snippet for Alias Setup. 
 

@@ -25,34 +25,33 @@ class Styles:
     bg_black = "\u001b[48;5;234m"
 
 
-def styled(txt: str, style: str = ''):
+def styled(txt: str, style: str = ""):
     return style + txt + Styles.reset
 
 
 if __name__ == "__main__":
-
     max_history = 300
 
     load_dotenv()
 
     file_path = os.path.realpath(__file__)
-    folder_path = file_path.replace("main.py", '')
+    folder_path = file_path.replace("main.py", "")
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('terminal_command_request')
+    parser.add_argument("terminal_command_request")
 
     parser.add_argument(
         "-e",
         "--execute",
         help="DANGER! This will execute the command immediately. ",
-        action='store_true'
+        action="store_true",
     )
     parser.add_argument(
         "-x",
         "--hide_code",
         help="Hides the code/command that is shown to execute when executing code.",
-        action='store_true'
+        action="store_true",
     )
     parser.add_argument(
         "-s",
@@ -62,10 +61,7 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
-        "-c",
-        "--no_colour",
-        help="No colour output",
-        action='store_true'
+        "-c", "--no_colour", help="No colour output", action="store_true"
     )
 
     args = parser.parse_args()
@@ -73,15 +69,25 @@ if __name__ == "__main__":
     api_key = os.getenv("OPENAI_API_KEY")
 
     if not api_key or args.set_key:
-        print(styled("Go to https://openai.com/api/ to generate your own API key.", Styles.blue))
-        print(styled('...also save this alias to your .zshrc or .bashrc file with:\n', Styles.blue))
-        print(styled('alias gpt="python3 ~'+file_path, Styles.green))
+        print(
+            styled(
+                "Go to https://openai.com/api/ to generate your own API key.",
+                Styles.blue,
+            )
+        )
+        print(
+            styled(
+                "...also save this alias to your .zshrc or .bashrc file with:\n",
+                Styles.blue,
+            )
+        )
+        print(styled('alias gpt="python3 ~' + file_path, Styles.green))
 
         if args.set_key is not None:
             api_key = args.set_key
         else:
             api_key = input("Input your API key to be saved to '.env':")
-        with open(folder_path+'.env', 'w') as f:
+        with open(folder_path + ".env", "w") as f:
             f.write(f'OPENAI_API_KEY = "{api_key}"')
 
     openai.api_key = api_key
@@ -90,7 +96,7 @@ if __name__ == "__main__":
     terminal_command_request = args.terminal_command_request
 
     try:
-        with open(folder_path+'request_history.json', mode="r") as f:
+        with open(folder_path + "request_history.json", mode="r") as f:
             history = json.loads(f.read())
     except FileNotFoundError:
         history: dict = {}
@@ -98,26 +104,31 @@ if __name__ == "__main__":
     if terminal_command_request in history.keys():
         answer = history[terminal_command_request]
     else:
-
         response = openai.Completion.create(
-            model="code-cushman-001",
-            prompt="Generate a bash script to " + terminal_command_request + "\n```bash\n#!/bin/bash",
+            model="text-davinci-003",
+            prompt="Write a short bash script to "
+                   + terminal_command_request
+                   + "\n```bash\n#!/bin/bash",
             temperature=0,
-            max_tokens=54,
+            max_tokens=100,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
-            stop=["```"]
+            stop=["```"],
         )
 
-        answer = response["choices"][0]['text'].strip()
+        answer = response["choices"][0]["text"].strip()
 
         # update cache
         history.update({terminal_command_request: answer})
         if len(history.keys()) > max_history:
-            history = {i: history[i] for i in history if list(history.keys()).index(i) < max_history}
+            history = {
+                i: history[i]
+                for i in history
+                if list(history.keys()).index(i) < max_history
+            }
 
-        with open(folder_path+'request_history.json', mode="w") as f:
+        with open(folder_path + "request_history.json", mode="w") as f:
             f.write(json.dumps(history))
 
     if args.execute:
